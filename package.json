@@ -1,0 +1,22 @@
+{
+  "name": "bubo",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "octokit": "^3.1.1"
+  },
+  "devDependencies": {
+    "dotenv": "^16.3.1",
+    "eslint": "^8.50.0",
+    "prettier": "3.0.3",
+    "smee-client": "^1.2.3"
+  }
+}
