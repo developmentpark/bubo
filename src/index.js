@@ -22,6 +22,14 @@ const app = new App({
 // This defines the message that your app will post to pull requests.
 const messageForNewPRs =
   "Thanks for opening a new PR! Please follow our contributing guidelines to make your PR easier to review.";
+const messageForResolveAutoReview =
+  "Great job! The review has been approved and successfully merged. Let's keep building together!";
+const messageForRejectAutoReview =
+  "Automatic review was not performed as a reviewer has already been manually assigned to the pull request. Manual review is underway.";
+
+function isApprovedToAutoReview() {
+  return true;
+}
 
 // This adds an event handler that your code will call later. When this event handler is called, it will log the event to the console. Then, it will use GitHub's REST API to add a comment to the pull request that triggered the event.
 async function handlePullRequestOpened({ octokit, payload }) {
@@ -38,10 +46,34 @@ async function handlePullRequestOpened({ octokit, payload }) {
         issue_number: payload.pull_request.number,
         body: messageForNewPRs,
         headers: {
-          "x-github-api-version": "2023-10-04",
+          "x-github-api-version": "2022-11-28",
         },
       },
     );
+
+    if (!isApprovedToAutoReview()) {
+      console.log(messageForRejectAutoReview);
+      return await octokit.rest.pulls.createReview({
+        owner: payload.repository.owner.login,
+        repo: payload.repository.name,
+        pull_number: payload.pull_request.number,
+        body: messageForRejectAutoReview,
+        event: "APPROVE",
+      });
+    }
+    await octokit.rest.pulls.createReview({
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      pull_number: payload.pull_request.number,
+      body: messageForResolveAutoReview,
+      event: "APPROVE",
+    });
+
+    await octokit.rest.pulls.merge({
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      pull_number: payload.pull_request.number,
+    });
   } catch (error) {
     if (error.response) {
       console.error(
