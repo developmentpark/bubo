@@ -14,12 +14,18 @@ async function performAutoReview({ octokit, payload }) {
     if (!isApproved) {
       return await octokitService.postComment(messages.REJECT_AUTO_REVIEW);
     }
-    await octokitService.postReview(messages.RESOLVE_AUTO_REVIEW);
+    const message = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
+    await octokitService.postReview(message);
     await octokitService.postMerge();
   } catch (error) {
     console.error(`Error: ${error.message}`);
     throw error;
   }
+}
+
+function getRndMessage(messages) {
+  const idx = Math.floor(Math.random() * messages.length);
+  return messages[idx];
 }
 
 export { performAutoReview };
