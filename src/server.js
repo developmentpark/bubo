@@ -2,8 +2,8 @@ import http from "http";
 import { createNodeMiddleware } from "@octokit/webhooks";
 import { app } from "./app.js";
 
-const port = 3000;
-const host = "localhost";
+const port = process.env.PORT || 3000;
+const host = process.env.HOST;
 const path = "/api/webhook";
 const localWebhookUrl = `http://${host}:${port}${path}`;
 
