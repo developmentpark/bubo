@@ -9,13 +9,14 @@ async function isApprovedToAutoReview(octokitService) {
 async function performAutoReview({ octokit, payload }) {
   const octokitService = new OctokitService({ octokit, payload });
   try {
-    await octokitService.postComment(messages.NEW_PR);
+    const newPRMessage = getRndMessage(messages.NEW_PR);
+    await octokitService.postComment(newPRMessage);
     const isApproved = await isApprovedToAutoReview(octokitService);
     if (!isApproved) {
       return await octokitService.postComment(messages.REJECT_AUTO_REVIEW);
     }
-    const message = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
-    await octokitService.postReview(message);
+    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
+    await octokitService.postReview(resolveReviewMessage);
     await octokitService.postMerge();
   } catch (error) {
     console.error(`Error: ${error.message}`);
