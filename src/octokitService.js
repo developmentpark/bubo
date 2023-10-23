@@ -48,4 +48,8 @@ export default class OctokitService {
       pull_number: this.issue_number,
     });
   }
+
+  isLabel(label) {
+    return this.payload.label.name.toLowerCase() === label;
+  }
 }

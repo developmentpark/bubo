@@ -1,6 +1,9 @@
 import { App } from "octokit";
 import fs from "fs";
-import { performAutoReview } from "./reviewService.js";
+import {
+  performAutoReview,
+  performAutoReviewByLabeled,
+} from "./reviewService.js";
 
 const appId = process.env.APP_ID;
 const webhookSecret = process.env.WEBHOOK_SECRET;
@@ -31,6 +34,30 @@ async function handlePullRequestOpened({ octokit, payload }) {
     console.error(error);
   }
 }
+
+async function handlePullRequestLabeled({ octokit, payload }) {
+  console.log(
+    `Received a pull request ${payload.action} event for #${payload.pull_request.number}`,
+  );
+  if (
+    payload.pull_request.state !== "open" ||
+    payload.pull_request.merged !== false
+  ) {
+    return;
+  }
+  try {
+    await performAutoReviewByLabeled({ octokit, payload });
+  } catch (error) {
+    if (error.response) {
+      console.error(
+        `Error! Status: ${error.response.status}. Message: ${error.response.data.message}`,
+      );
+    }
+    console.error(error);
+  }
+}
+
+app.webhooks.on("pull_request.labeled", handlePullRequestLabeled);
 
 app.webhooks.on("pull_request.opened", handlePullRequestOpened);
 

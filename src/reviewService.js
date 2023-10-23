@@ -29,4 +29,20 @@ function getRndMessage(messages) {
   return messages[idx];
 }
 
-export { performAutoReview };
+async function performAutoReviewByLabeled({ octokit, payload }) {
+  const octokitService = new OctokitService({ octokit, payload });
+  const selfReviewLabel = "bubo";
+  try {
+    if (!octokitService.isLabel(selfReviewLabel)) {
+      return;
+    }
+    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
+    await octokitService.postReview(resolveReviewMessage);
+    await octokitService.postMerge();
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    throw error;
+  }
+}
+
+export { performAutoReview, performAutoReviewByLabeled };
