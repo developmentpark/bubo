@@ -4,7 +4,9 @@ export default class OctokitService {
     this.payload = payload;
     this.owner = this.payload.repository.owner.login;
     this.repo = this.payload.repository.name;
-    this.issue_number = this.payload.pull_request.number;
+    this.issue_number = (
+      this.payload.pull_request || this.payload["check_run"].pull_requests[0]
+    ).number;
   }
 
   async getChecksSuiteInfo() {

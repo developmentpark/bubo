@@ -27,6 +27,53 @@ function getRndMessage(messages) {
   return messages[idx];
 }
 
+async function handlePullRequestChecksComplete({ octokit, payload }) {
+  try {
+    const isAutoCheckPostMerge = payload["check_run"].pull_requests.length == 0;
+    if (isAutoCheckPostMerge) {
+      return;
+    }
+
+    const octokitService = new OctokitService({ octokit, payload });
+
+    const checkRun = payload["check_run"];
+
+    const checkSuite = checkRun["check_suite"];
+
+    const reviewers = await octokitService.getReviewers();
+    const hasReviewers = reviewers.length > 0;
+    if (hasReviewers) {
+      const selfReviewLabel = "bubo";
+      const isSelfReview = await octokitService.isLabel(selfReviewLabel);
+      if (!isSelfReview) {
+        return;
+      }
+    }
+
+    const mergeInfo = await octokitService.getMergeInfo();
+    const isMergeable =
+      !mergeInfo.merged && mergeInfo.mergeable && mergeInfo.state == "clean";
+    const isChecksSuiteCompleted =
+      checkSuite.status == "completed" && checkSuite.conclusion == "success";
+
+    if (!isMergeable || !isChecksSuiteCompleted) {
+      return;
+    }
+
+    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
+    await octokitService.postReview(resolveReviewMessage);
+
+    await octokitService.postMerge();
+  } catch (error) {
+    if (error.response) {
+      console.error(
+        `Error! Status: ${error.response.status}. Message: ${error.response.data.message}`,
+      );
+    }
+    console.error(error);
+  }
+}
+
 async function handlePullRequestOpen({ octokit, payload }) {
   try {
     const octokitService = new OctokitService({ octokit, payload });
@@ -100,6 +147,13 @@ app.webhooks.on("pull_request.opened", ({ octokit, payload }) => {
     `Received a pull request event ${payload.action} for #${payload.pull_request.number}`,
   );
   handlePullRequestOpen({ octokit, payload });
+});
+
+app.webhooks.on("check_run.completed", ({ octokit, payload }) => {
+  console.log(
+    `Received a pull request event ${payload.action} for #${payload.pull_request.number}`,
+  );
+  handlePullRequestChecksComplete({ octokit, payload });
 });
 
 app.webhooks.onError((error) => {
