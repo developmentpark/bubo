@@ -27,7 +27,7 @@ function getRndMessage(messages) {
   return messages[idx];
 }
 
-async function handlePullRequestChecksComplete({ octokit, payload }) {
+async function handleCompletionChecks({ octokit, payload }) {
   try {
     const isAutoCheckPostMerge = payload["check_run"].pull_requests.length == 0;
     if (isAutoCheckPostMerge) {
@@ -74,7 +74,7 @@ async function handlePullRequestChecksComplete({ octokit, payload }) {
   }
 }
 
-async function handlePullRequestOpen({ octokit, payload }) {
+async function handleOpenPullRequest({ octokit, payload }) {
   try {
     const octokitService = new OctokitService({ octokit, payload });
 
@@ -118,7 +118,7 @@ async function handlePullRequestOpen({ octokit, payload }) {
   }
 }
 
-async function handlePullRequestLabelAdd({ octokit, payload }) {
+async function handleAddingLabel({ octokit, payload }) {
   try {
     const octokitService = new OctokitService({ octokit, payload });
 
@@ -165,21 +165,21 @@ app.webhooks.on("pull_request.labeled", ({ octokit, payload }) => {
   console.log(
     `Received a pull request ${payload.action} event for #${payload.pull_request.number}`,
   );
-  handlePullRequestLabelAdd({ octokit, payload });
+  handleAddingLabel({ octokit, payload });
 });
 
 app.webhooks.on("pull_request.opened", ({ octokit, payload }) => {
   console.log(
     `Received a pull request event ${payload.action} for #${payload.pull_request.number}`,
   );
-  handlePullRequestOpen({ octokit, payload });
+  handleOpenPullRequest({ octokit, payload });
 });
 
 app.webhooks.on("check_run.completed", ({ octokit, payload }) => {
   console.log(
     `Received a pull request event ${payload.action} for #${payload.pull_request.number}`,
   );
-  handlePullRequestChecksComplete({ octokit, payload });
+  handleCompletionChecks({ octokit, payload });
 });
 
 app.webhooks.onError((error) => {
