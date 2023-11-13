@@ -118,18 +118,39 @@ async function handlePullRequestOpen({ octokit, payload }) {
   }
 }
 
-async function handlePullRequestLabeled({ octokit, payload }) {
-  console.log(
-    `Received a pull request ${payload.action} event for #${payload.pull_request.number}`,
-  );
-  if (
-    payload.pull_request.state !== "open" ||
-    payload.pull_request.merged !== false
-  ) {
-    return;
-  }
+async function handlePullRequestLabelAdd({ octokit, payload }) {
   try {
-    await performAutoReviewByLabeled({ octokit, payload });
+    const octokitService = new OctokitService({ octokit, payload });
+
+    const selfReviewLabel = "bubo";
+    const isSelfReview = await octokitService.isLabel(selfReviewLabel);
+    if (!isSelfReview) {
+      return;
+    }
+
+    const checksSuiteInfo = await octokitService.getChecksSuiteInfo();
+    const hasChecksSuite = checksSuiteInfo["total_count"] > 0;
+    if (hasChecksSuite) {
+      const isChecksSuiteCompleted = !checksSuiteInfo["check_suites"].some(
+        ({ status, conclusion }) =>
+          status != "completed" || conclusion != "success",
+      );
+      if (!isChecksSuiteCompleted) {
+        return;
+      }
+    }
+
+    const mergeInfo = await octokitService.getMergeInfo();
+    const isMergeable =
+      !mergeInfo.merged && mergeInfo.mergeable && mergeInfo.state == "clean";
+    if (!isMergeable) {
+      return;
+    }
+
+    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
+    await octokitService.postReview(resolveReviewMessage);
+
+    await octokitService.postMerge();
   } catch (error) {
     if (error.response) {
       console.error(
@@ -140,7 +161,12 @@ async function handlePullRequestLabeled({ octokit, payload }) {
   }
 }
 
-app.webhooks.on("pull_request.labeled", handlePullRequestLabeled);
+app.webhooks.on("pull_request.labeled", ({ octokit, payload }) => {
+  console.log(
+    `Received a pull request ${payload.action} event for #${payload.pull_request.number}`,
+  );
+  handlePullRequestLabelAdd({ octokit, payload });
+});
 
 app.webhooks.on("pull_request.opened", ({ octokit, payload }) => {
   console.log(
