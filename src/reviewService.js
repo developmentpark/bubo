@@ -9,19 +9,20 @@ async function isApprovedToAutoReview(octokitService) {
 async function performAutoReview({ octokit, payload }) {
   const octokitService = new OctokitService({ octokit, payload });
   try {
-    const newPRMessage = getRndMessage(messages.NEW_PR);
-    await octokitService.postComment(newPRMessage);
-    const isApproved = await isApprovedToAutoReview(octokitService);
-    if (!isApproved) {
-      return await octokitService.postComment(messages.REJECT_AUTO_REVIEW);
-    }
     const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
     await octokitService.postReview(resolveReviewMessage);
+
     await octokitService.postMerge();
   } catch (error) {
     console.error(`Error: ${error.message}`);
     throw error;
   }
+}
+
+async function notifyPullRequestReception({ octokit, payload }) {
+  const octokitService = new OctokitService({ octokit, payload });
+  const newPRMessage = getRndMessage(messages.NEW_PR);
+  await octokitService.postComment(newPRMessage);
 }
 
 function getRndMessage(messages) {
@@ -45,4 +46,8 @@ async function performAutoReviewByLabeled({ octokit, payload }) {
   }
 }
 
-export { performAutoReview, performAutoReviewByLabeled };
+export {
+  performAutoReview,
+  performAutoReviewByLabeled,
+  notifyPullRequestReception,
+};

@@ -4,6 +4,7 @@ import { messages } from "./messages.js";
 import { App } from "octokit";
 import fs from "fs";
 import {
+  notifyPullRequestReception,
   performAutoReview,
   performAutoReviewByLabeled,
 } from "./reviewService.js";
@@ -21,11 +22,6 @@ const app = new App({
     secret: webhookSecret,
   },
 });
-
-function getRndMessage(messages) {
-  const idx = Math.floor(Math.random() * messages.length);
-  return messages[idx];
-}
 
 async function handleCompletionChecks({ octokit, payload }) {
   try {
@@ -60,10 +56,7 @@ async function handleCompletionChecks({ octokit, payload }) {
       return;
     }
 
-    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
-    await octokitService.postReview(resolveReviewMessage);
-
-    await octokitService.postMerge();
+    performAutoReview({ octokit, payload });
   } catch (error) {
     if (error.response) {
       console.error(
@@ -78,8 +71,7 @@ async function handleOpenPullRequest({ octokit, payload }) {
   try {
     const octokitService = new OctokitService({ octokit, payload });
 
-    const newPRMessage = getRndMessage(messages.NEW_PR);
-    await octokitService.postComment(newPRMessage);
+    await notifyPullRequestReception({ octokit, payload });
 
     const checksSuiteInfo = await octokitService.getChecksSuiteInfo();
     const hasCheckers = checksSuiteInfo["total_count"] > 0;
@@ -104,10 +96,7 @@ async function handleOpenPullRequest({ octokit, payload }) {
       return;
     }
 
-    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
-    await octokitService.postReview(resolveReviewMessage);
-
-    await octokitService.postMerge();
+    performAutoReview({ octokit, payload });
   } catch (error) {
     if (error.response) {
       console.error(
@@ -147,10 +136,7 @@ async function handleAddingLabel({ octokit, payload }) {
       return;
     }
 
-    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
-    await octokitService.postReview(resolveReviewMessage);
-
-    await octokitService.postMerge();
+    performAutoReview({ octokit, payload });
   } catch (error) {
     if (error.response) {
       console.error(
