@@ -1,3 +1,6 @@
+import OctokitService from "./octokitService.js";
+import { messages } from "./messages.js";
+
 import { App } from "octokit";
 import fs from "fs";
 import {
@@ -19,12 +22,45 @@ const app = new App({
   },
 });
 
-async function handlePullRequestOpened({ octokit, payload }) {
-  console.log(
-    `Received a pull request event for #${payload.pull_request.number}`,
-  );
+function getRndMessage(messages) {
+  const idx = Math.floor(Math.random() * messages.length);
+  return messages[idx];
+}
+
+async function handlePullRequestOpen({ octokit, payload }) {
   try {
-    await performAutoReview({ octokit, payload });
+    const octokitService = new OctokitService({ octokit, payload });
+
+    const newPRMessage = getRndMessage(messages.NEW_PR);
+    await octokitService.postComment(newPRMessage);
+
+    const checksSuiteInfo = await octokitService.getChecksSuiteInfo();
+    const hasCheckers = checksSuiteInfo["total_count"] > 0;
+    if (hasCheckers) {
+      return;
+    }
+
+    const reviewers = await octokitService.getReviewers();
+    const hasReviewers = reviewers.length > 0;
+    if (hasReviewers) {
+      const selfReviewLabel = "bubo";
+      const isSelfReview = await octokitService.isLabel(selfReviewLabel);
+      if (!isSelfReview) {
+        return;
+      }
+    }
+
+    const mergeInfo = await octokitService.getMergeInfo();
+    const isMergeable =
+      !mergeInfo.merged && mergeInfo.mergeable && mergeInfo.state == "clean";
+    if (!isMergeable) {
+      return;
+    }
+
+    const resolveReviewMessage = getRndMessage(messages.RESOLVE_AUTO_REVIEW);
+    await octokitService.postReview(resolveReviewMessage);
+
+    await octokitService.postMerge();
   } catch (error) {
     if (error.response) {
       console.error(
@@ -59,7 +95,12 @@ async function handlePullRequestLabeled({ octokit, payload }) {
 
 app.webhooks.on("pull_request.labeled", handlePullRequestLabeled);
 
-app.webhooks.on("pull_request.opened", handlePullRequestOpened);
+app.webhooks.on("pull_request.opened", ({ octokit, payload }) => {
+  console.log(
+    `Received a pull request event ${payload.action} for #${payload.pull_request.number}`,
+  );
+  handlePullRequestOpen({ octokit, payload });
+});
 
 app.webhooks.onError((error) => {
   if (error.name === "AggregateError") {

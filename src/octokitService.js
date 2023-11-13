@@ -7,6 +7,32 @@ export default class OctokitService {
     this.issue_number = this.payload.pull_request.number;
   }
 
+  async getChecksSuiteInfo() {
+    const checksSuiteInfo = await this.octokit.rest.checks.listSuitesForRef({
+      owner: this.owner,
+      repo: this.repo,
+      ref: `pull/${this.issue_number}/head`,
+    });
+
+    return checksSuiteInfo.data;
+  }
+
+  async getMergeInfo() {
+    const mergeInfo = await this.octokit.rest.pulls.get({
+      owner: this.owner,
+      repo: this.repo,
+      pull_number: this.issue_number,
+    });
+
+    const data = mergeInfo.data;
+
+    return {
+      merge: data["merged"],
+      mergeable: data["mergeable"],
+      state: data["mergeable_state"],
+    };
+  }
+
   async getReviewers() {
     const res = await this.octokit.rest.pulls.listRequestedReviewers({
       owner: this.owner,
@@ -49,7 +75,15 @@ export default class OctokitService {
     });
   }
 
-  isLabel(label) {
-    return this.payload.label.name.toLowerCase() === label;
+  async isLabel(labelName) {
+    const pullInfo = await this.octokit.rest.pulls.get({
+      owner: this.owner,
+      repo: this.repo,
+      pull_number: this.issue_number,
+    });
+
+    return pullInfo.data.labels.find(
+      (label) => label.name.toLowerCase() === labelName.toLowerCase(),
+    );
   }
 }
