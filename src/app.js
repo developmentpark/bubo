@@ -133,7 +133,7 @@ app.webhooks.on("pull_request.opened", ({ octokit, payload }) => {
 
 app.webhooks.on("check_run.completed", ({ octokit, payload }) => {
   console.log(
-    `Received a pull request event ${payload.action} for #${payload.pull_request.number}`,
+    `Received a pull request event ${payload.action} for #${payload["check_run"].pull_requests[0].number}`,
   );
   handleCompletionChecks({ octokit, payload });
 });
