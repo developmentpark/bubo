@@ -44,14 +44,14 @@ export default class OctokitService {
     return res.data.users;
   }
 
-  postComment(comment) {
+  postMessage(message) {
     return this.octokit.request(
       "POST /repos/{owner}/{repo}/issues/{issue_number}/comments",
       {
         owner: this.owner,
         repo: this.repo,
         issue_number: this.issue_number,
-        body: comment,
+        body: message,
         headers: {
           "x-github-api-version": "2022-11-28",
         },
@@ -59,12 +59,12 @@ export default class OctokitService {
     );
   }
 
-  postReview(comment) {
+  postReview(message) {
     return this.octokit.rest.pulls.createReview({
       owner: this.owner,
       repo: this.repo,
       pull_number: this.issue_number,
-      body: comment,
+      body: message,
       event: "APPROVE",
     });
   }

@@ -56,7 +56,7 @@ export default class ReviewService {
 
   async notifyPullRequestReception() {
     const newPRMessage = this.getRndMessage(messages.NEW_PR);
-    await this.octokitService.postComment(newPRMessage);
+    await this.octokitService.postMessage(newPRMessage);
   }
 
   getRndMessage(messages) {

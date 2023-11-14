@@ -1,5 +1,3 @@
-import { messages } from "./messages.js";
-
 import { App } from "octokit";
 import fs from "fs";
 import ReviewService from "./reviewService.js";
