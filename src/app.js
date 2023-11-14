@@ -1,13 +1,8 @@
-import OctokitService from "./octokitService.js";
 import { messages } from "./messages.js";
 
 import { App } from "octokit";
 import fs from "fs";
-import {
-  notifyPullRequestReception,
-  performAutoReview,
-  performAutoReviewByLabeled,
-} from "./reviewService.js";
+import ReviewService from "./reviewService.js";
 
 const appId = process.env.APP_ID;
 const webhookSecret = process.env.WEBHOOK_SECRET;
@@ -30,33 +25,24 @@ async function handleCompletionChecks({ octokit, payload }) {
       return;
     }
 
-    const octokitService = new OctokitService({ octokit, payload });
+    const reviewService = new ReviewService({ octokit, payload });
 
-    const checkRun = payload["check_run"];
-
-    const checkSuite = checkRun["check_suite"];
-
-    const reviewers = await octokitService.getReviewers();
-    const hasReviewers = reviewers.length > 0;
+    const hasReviewers = await reviewService.hasReviewers();
     if (hasReviewers) {
-      const selfReviewLabel = "bubo";
-      const isSelfReview = await octokitService.isLabel(selfReviewLabel);
-      if (!isSelfReview) {
+      const hasBotLikeReviewer = await reviewService.hasBotLikeReviewer();
+      if (!hasBotLikeReviewer) {
         return;
       }
     }
 
-    const mergeInfo = await octokitService.getMergeInfo();
-    const isMergeable =
-      !mergeInfo.merged && mergeInfo.mergeable && mergeInfo.state == "clean";
-    const isChecksSuiteCompleted =
-      checkSuite.status == "completed" && checkSuite.conclusion == "success";
+    const isMergeable = await reviewService.isMergeable();
 
-    if (!isMergeable || !isChecksSuiteCompleted) {
-      return;
+    const isChecksSuiteCompletedSuccess =
+      await reviewService.isChecksSuiteCompletedSuccess();
+
+    if (isMergeable && isChecksSuiteCompletedSuccess) {
+      await reviewService.performAutoReview();
     }
-
-    performAutoReview({ octokit, payload });
   } catch (error) {
     if (error.response) {
       console.error(
@@ -69,34 +55,27 @@ async function handleCompletionChecks({ octokit, payload }) {
 
 async function handleOpenPullRequest({ octokit, payload }) {
   try {
-    const octokitService = new OctokitService({ octokit, payload });
+    const reviewService = new ReviewService({ octokit, payload });
 
-    await notifyPullRequestReception({ octokit, payload });
+    await reviewService.notifyPullRequestReception();
 
-    const checksSuiteInfo = await octokitService.getChecksSuiteInfo();
-    const hasCheckers = checksSuiteInfo["total_count"] > 0;
-    if (hasCheckers) {
+    const hasChecksSuite = await reviewService.hasChecksSuite();
+    if (hasChecksSuite) {
       return;
     }
 
-    const reviewers = await octokitService.getReviewers();
-    const hasReviewers = reviewers.length > 0;
+    const hasReviewers = await reviewService.hasReviewers();
     if (hasReviewers) {
-      const selfReviewLabel = "bubo";
-      const isSelfReview = await octokitService.isLabel(selfReviewLabel);
-      if (!isSelfReview) {
+      const hasBotLikeReviewer = await reviewService.hasBotLikeReviewer();
+      if (!hasBotLikeReviewer) {
         return;
       }
     }
 
-    const mergeInfo = await octokitService.getMergeInfo();
-    const isMergeable =
-      !mergeInfo.merged && mergeInfo.mergeable && mergeInfo.state == "clean";
-    if (!isMergeable) {
-      return;
+    const isMergeable = await reviewService.isMergeable();
+    if (isMergeable) {
+      await reviewService.performAutoReview();
     }
-
-    performAutoReview({ octokit, payload });
   } catch (error) {
     if (error.response) {
       console.error(
@@ -109,34 +88,25 @@ async function handleOpenPullRequest({ octokit, payload }) {
 
 async function handleAddingLabel({ octokit, payload }) {
   try {
-    const octokitService = new OctokitService({ octokit, payload });
+    const reviewService = new ReviewService({ octokit, payload });
 
-    const selfReviewLabel = "bubo";
-    const isSelfReview = await octokitService.isLabel(selfReviewLabel);
-    if (!isSelfReview) {
+    const hasBotLikeReviewer = await reviewService.hasBotLikeReviewer();
+    if (!hasBotLikeReviewer) {
       return;
     }
-
-    const checksSuiteInfo = await octokitService.getChecksSuiteInfo();
-    const hasChecksSuite = checksSuiteInfo["total_count"] > 0;
+    const hasChecksSuite = await reviewService.hasChecksSuite();
     if (hasChecksSuite) {
-      const isChecksSuiteCompleted = !checksSuiteInfo["check_suites"].some(
-        ({ status, conclusion }) =>
-          status != "completed" || conclusion != "success",
-      );
-      if (!isChecksSuiteCompleted) {
+      const isChecksSuiteCompletedSuccess =
+        await reviewService.isChecksSuiteCompletedSuccess();
+      if (!isChecksSuiteCompletedSuccess) {
         return;
       }
     }
 
-    const mergeInfo = await octokitService.getMergeInfo();
-    const isMergeable =
-      !mergeInfo.merged && mergeInfo.mergeable && mergeInfo.state == "clean";
-    if (!isMergeable) {
-      return;
+    const isMergeable = await reviewService.isMergeable();
+    if (isMergeable) {
+      await reviewService.performAutoReview();
     }
-
-    performAutoReview({ octokit, payload });
   } catch (error) {
     if (error.response) {
       console.error(
