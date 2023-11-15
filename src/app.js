@@ -18,11 +18,6 @@ const app = new App({
 
 async function handleCompletionChecks({ octokit, payload }) {
   try {
-    const isAutoCheckPostMerge = payload["check_run"].pull_requests.length == 0;
-    if (isAutoCheckPostMerge) {
-      return;
-    }
-
     const reviewService = new ReviewService({ octokit, payload });
 
     const hasReviewers = await reviewService.hasReviewers();
@@ -130,10 +125,13 @@ app.webhooks.on("pull_request.opened", ({ octokit, payload }) => {
 });
 
 app.webhooks.on("check_run.completed", ({ octokit, payload }) => {
-  console.log(
-    `Received a pull request event ${payload.action} for #${payload["check_run"].pull_requests[0].number}`,
-  );
-  handleCompletionChecks({ octokit, payload });
+  const isPostMergeChecking = payload["check_run"].pull_requests.length == 0;
+  if (!isPostMergeChecking) {
+    console.log(
+      `Received a pull request event ${payload.action} for #${payload["check_run"].pull_requests[0].number}`,
+    );
+    handleCompletionChecks({ octokit, payload });
+  }
 });
 
 app.webhooks.onError((error) => {
