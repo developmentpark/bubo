@@ -1,6 +1,6 @@
 <h1 style="font-size:60px;" align="center">🦉</h1>
 <h1 align="center">✨ Bubo Reviewer ✨</h1>
-Bubo Reviewer is your virtual development companion, a "mock" reviewer that streamlines your workflow as you explore and become familiar with development processes. Designed for those moments when you venture into development without reviewers but still want to follow a workflow based on protected branches and pull requests.
+Bubo Reviewer is your virtual development companion that streamlines your workflow as you explore and become familiar with development processes. Designed for those moments when you venture into development without reviewers but still want to follow a workflow based on protected branches and pull requests.
 
 ## 🌟 Key Features
 
@@ -8,9 +8,19 @@ Bubo Reviewer is your virtual development companion, a "mock" reviewer that stre
 
 - **Workflow Integration**: Seamlessly integrates with your existing development workflow, making it easy to maintain a consistent process even when real reviewers are not available.
 
-- **Customizable Rules**: Define custom rules and coding standards that Bubo Reviewer will use to evaluate your pull requests.
+- **Git Actions Synergy**: Aligns harmoniously with Git Actions, leveraging these automated processes to maintain code quality and adherence to project standards.
+
+- **Customizable Rules**: Customize Bubo's evaluation criteria by defining specific rules through GitHub Actions jobs, adapting the automated review to your project's unique requirements.
 
 - **Merge Automation**: Bubo can also automatically merge your pull requests when they meet your defined criteria.
+
+## 🛠️ How Works
+
+- **Conflict-Free Integration**: Ensures a conflict-free integration by meticulously checking for conflicts within the branch.
+
+- **Git Actions Validation**: Rigorously validates the success of Git Actions, encompassing various automated checks such as running tests, applying linters, enforcing coding conventions, and any other tasks defined in the GitHub Actions workflow..
+
+- **Automated Review and Merge**: In the absence of assigned human reviewers, Bubo seamlessly takes charge of the review process, following your defined custom rules through GitHub Actions jobs. Additionally, you have the flexibility to prioritize Bubo over other assigned reviewers, facilitating automatic review and merge.
 
 ## 💻 Tech
 
